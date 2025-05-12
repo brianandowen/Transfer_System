@@ -8,6 +8,7 @@ async function getDepartmentData(id: number) {
   return data.find((item: any) => item.department_id === id);
 }
 
+// ✅ 不要自定義 PageProps，直接 inline 解構
 export default async function Page({ params }: { params: { id: string } }) {
   const id = parseInt(params.id, 10);
   const department = await getDepartmentData(id);
