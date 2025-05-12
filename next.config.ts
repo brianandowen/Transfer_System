@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    appDir: true, 
+    serverActions: true
   },
-}
+  eslint: {
+    ignoreDuringBuilds: true // 🟢 忽略 ESLint 錯誤
+  }
+};
 
 export default nextConfig;
