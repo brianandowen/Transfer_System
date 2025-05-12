@@ -1,17 +1,18 @@
-// /app/api/departments/next-id/route.ts
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  try {
-    const [rows]: [any[], any] = await db.query(
-      'SELECT MAX(department_id) AS max_id FROM departments'
-    );
-    const nextId = (rows[0]?.max_id || 0) + 1;
+  const { data, error } = await supabase
+    .from('departments')
+    .select('department_id')
+    .order('department_id', { ascending: false })
+    .limit(1);
 
-    return NextResponse.json({ next_id: nextId });
-  } catch (err: any) {
-    console.error('❌ 無法取得下一個 ID:', err);
-    return NextResponse.json({ message: '取得失敗', error: err.message }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  const nextId = data && data.length > 0 ? data[0].department_id + 1 : 1;
+
+  return NextResponse.json({ nextId });
 }
