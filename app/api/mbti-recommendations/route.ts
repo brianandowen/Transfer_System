@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 
 type Entry = {
   department_id: string;
@@ -8,56 +8,57 @@ type Entry = {
   reason: string;
 };
 
+// 🔁 POST: 批次寫入推薦資料
 export async function POST(req: NextRequest) {
   try {
     const entries: Entry[] = await req.json();
 
     if (!Array.isArray(entries) || entries.length === 0) {
-      console.error('❌ Invalid payload:', entries);
       return NextResponse.json({ message: 'Invalid payload' }, { status: 400 });
     }
 
     const departmentIds = entries.map(e => e.department_id);
-    console.log('📦 Received entries:', entries);
-    console.log('📚 Department IDs to lookup:', departmentIds);
 
     // 查詢對應系所的 category
-    const [deptRows] = await db.query(
-      `SELECT department_id, category FROM departments WHERE department_id IN (?)`,
-      [departmentIds]
-    );
+    const { data: deptRows, error: deptError } = await supabase
+      .from('departments')
+      .select('department_id, category')
+      .in('department_id', departmentIds);
 
-    console.log('🎓 Retrieved department categories:', deptRows);
+    if (deptError) {
+      console.error('❌ 部門查詢錯誤:', deptError);
+      return NextResponse.json({ message: '查詢錯誤' }, { status: 500 });
+    }
 
     const deptMap = Object.fromEntries(
-      (deptRows as any[]).map(row => [row.department_id, row.category])
+      (deptRows || []).map(row => [row.department_id, row.category])
     );
 
-    const values = entries.map(({ department_id, mbti_type, recommend_type, reason }) => [
-      department_id,
-      mbti_type,
-      recommend_type,
-      reason,
-      deptMap[department_id] || null,
-    ]);
+    const insertValues = entries.map(entry => ({
+      department_id: entry.department_id,
+      mbti_type: entry.mbti_type,
+      recommend_type: entry.recommend_type,
+      reason: entry.reason,
+      group_name: deptMap[entry.department_id] || null,
+    }));
 
-    console.log('🛠️ Prepared INSERT values:', values);
+    const { error: insertError } = await supabase
+      .from('mbti_recommendations')
+      .insert(insertValues);
 
-    const sql = `
-      INSERT INTO mbti_recommendations
-      (department_id, mbti_type, recommend_type, reason, group_name)
-      VALUES ?
-    `;
+    if (insertError) {
+      console.error('❌ 寫入失敗:', insertError);
+      return NextResponse.json({ message: '寫入失敗' }, { status: 500 });
+    }
 
-    await db.query(sql, [values]);
-
-    console.log('✅ Successfully inserted MBTI recommendations');
-    return NextResponse.json({ message: 'Success' }, { status: 200 });
+    return NextResponse.json({ message: 'Success' });
   } catch (error) {
-    console.error('❌ Error inserting MBTI recommendations:', error);
+    console.error('❌ 發生例外錯誤:', error);
     return NextResponse.json({ message: 'Server error' }, { status: 500 });
   }
 }
+
+// 🔍 GET: 根據 MBTI 查推薦結果
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const type = searchParams.get('type');
@@ -67,22 +68,54 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const [rows]: [any[], any] = await db.query(
-      `SELECT 
-        d.department_id AS department_id,
-        d.department_name AS name,
-        d.category AS group,
-        r.reason,
-        r.recommend_type
-      FROM mbti_recommendations r
-      JOIN departments d ON r.department_id = d.department_id
-      WHERE r.mbti_type = ?
-      ORDER BY r.recommend_type`,
-      [type]
-    );
+    const { data, error } = await supabase
+      .from('mbti_recommendations')
+      .select(`
+        department_id,
+        reason,
+        recommend_type,
+        departments:department_id (
+          department_name,
+          category
+        )
+      `)
+      .eq('mbti_type', type)
+      .order('recommend_type');
 
-    const best = rows.filter(r => r.recommend_type === 'suitable');
-    const worst = rows.filter(r => r.recommend_type === 'unsuitable');
+    if (error || !data) {
+      console.error('❌ 查詢錯誤:', error);
+      return NextResponse.json({ error: error?.message || '找不到資料' }, { status: 500 });
+    }
+
+    type Row = {
+      department_id: string;
+      reason: string;
+      recommend_type: 'suitable' | 'unsuitable';
+      departments: {
+        department_name: string;
+        category: string;
+      } | null;
+    };
+
+    const rows = data as unknown as Row[];
+
+    const best = rows
+      .filter(r => r.recommend_type === 'suitable')
+      .map(r => ({
+        department_id: r.department_id,
+        name: r.departments?.department_name || '',
+        group: r.departments?.category || '',
+        reason: r.reason,
+      }));
+
+    const worst = rows
+      .filter(r => r.recommend_type === 'unsuitable')
+      .map(r => ({
+        department_id: r.department_id,
+        name: r.departments?.department_name || '',
+        group: r.departments?.category || '',
+        reason: r.reason,
+      }));
 
     return NextResponse.json({ best, worst });
   } catch (err) {
