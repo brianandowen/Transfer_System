@@ -1,35 +1,14 @@
 import { notFound } from 'next/navigation';
 
-type DepartmentQuota = {
-  grade: number;
-  quota: number;
-};
-
-type Department = {
-  department_id: number;
-  department_name: string;
-  category: string;
-  exam_subjects: string;
-  score_ratio: Record<string, number>;
-  remarks: string;
-  quotas: DepartmentQuota[];
-};
-
-type PageProps = {
-  params: {
-    id: string;
-  };
-};
-
-async function getDepartmentData(id: number): Promise<Department | undefined> {
+async function getDepartmentData(id: number) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/conditions`, {
     cache: 'no-store',
   });
-  const data: Department[] = await res.json();
-  return data.find((item) => item.department_id === id);
+  const data = await res.json();
+  return data.find((item: any) => item.department_id === id);
 }
 
-export default async function TransferConditionDetailPage({ params }: PageProps) {
+export default async function Page({ params }: { params: { id: string } }) {
   const id = parseInt(params.id, 10);
   const department = await getDepartmentData(id);
 
@@ -44,7 +23,7 @@ export default async function TransferConditionDetailPage({ params }: PageProps)
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-2">轉入年級與名額</h2>
         <ul className="list-disc list-inside">
-          {department.quotas.map((q, index) => (
+          {department.quotas.map((q: any, index: number) => (
             <li key={index}>
               {q.grade} 年級 — {q.quota} 名
             </li>
@@ -60,7 +39,7 @@ export default async function TransferConditionDetailPage({ params }: PageProps)
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-2">成績比例</h2>
         <ul>
-          {Object.entries(department.score_ratio).map(([subject, percent], index) => (
+          {Object.entries(department.score_ratio).map(([subject, percent]: any, index) => (
             <li key={index}>
               {subject}：{percent}%
             </li>
