@@ -1,43 +1,30 @@
-import { db } from '@/lib/db';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 import { serialize } from 'cookie';
 
 export async function POST(req: NextRequest) {
-  try {
-    const { username, password } = await req.json();
+  const { username, password } = await req.json();
 
-    // 查資料庫，找這個 username
-    const [rows]: [any[], any] = await db.query(
-      'SELECT * FROM admin_users WHERE username = ?',
-      [username]
-    );
+  const { data, error } = await supabase
+    .from('admin_users')
+    .select('*')
+    .eq('username', username)
+    .single();
 
-    if (rows.length === 0) {
-      return new Response('找不到帳號', { status: 401 });
-    }
+  if (error || !data || data.password !== password) {
+    return NextResponse.json({ error: '帳號或密碼錯誤' }, { status: 401 });
+  }
 
-    const user = rows[0];
+  const res = NextResponse.json({ message: '登入成功' });
 
-    // 比對密碼（目前明文比對）
-    if (user.password !== password) {
-      return new Response('密碼錯誤', { status: 401 });
-    }
-
-    // 密碼正確 ➔ 設定Cookie
-    const cookie = serialize('adminToken', 'valid', {
+  res.headers.set(
+    'Set-Cookie',
+    serialize('admin-auth', '1', {
       path: '/',
       httpOnly: true,
-      maxAge: 60 * 60 * 2, // 2小時有效
-    });
+      maxAge: 60 * 60 * 2,
+    })
+  );
 
-    return new Response('登入成功', {
-      status: 200,
-      headers: {
-        'Set-Cookie': cookie,
-      },
-    });
-  } catch (error) {
-    console.error('登入錯誤', error);
-    return new Response('伺服器錯誤', { status: 500 });
-  }
+  return res;
 }
