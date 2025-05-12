@@ -1,65 +1,67 @@
-import { db } from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const [rows]: [any[], any] = await db.query(`
-      SELECT
-        d.department_id,
-        d.department_name,
-        d.category,
-        tc.exam_subjects,
-        tc.score_ratio,
-        tc.remarks,
-        gq.grade,
-        gq.quota
-      FROM departments d
-      LEFT JOIN transfer_conditions tc ON d.department_id = tc.department_id
-      LEFT JOIN grade_quotas gq ON d.department_id = gq.department_id
-      ORDER BY d.department_id, gq.grade;
-    `);
+    // 抓出所有 departments
+    const { data: departments, error: deptError } = await supabase
+      .from('departments')
+      .select('*')
+      .order('department_id');
 
-    const data = rows.reduce((acc: any[], row: any) => {
-      let existing = acc.find(item => item.department_id === row.department_id);
+    if (deptError) {
+      return NextResponse.json({ error: deptError.message }, { status: 500 });
+    }
 
-      if (!existing) {
-        let parsedRatio = {};
-        try {
-          parsedRatio = row.score_ratio ? JSON.parse(row.score_ratio) : {};
-        } catch {
-          parsedRatio = {};
-        }
+    // 抓出所有 transfer_conditions
+    const { data: conditions, error: condError } = await supabase
+      .from('transfer_conditions')
+      .select('*');
 
-        existing = {
-          department_id: row.department_id,
-          department_name: row.department_name,
-          category: row.category,
-          exam_subjects: row.exam_subjects || '',
-          score_ratio: parsedRatio,
-          remarks: row.remarks || '',
-          quotas: [],
-        };
+    if (condError) {
+      return NextResponse.json({ error: condError.message }, { status: 500 });
+    }
 
-        acc.push(existing);
+    // 抓出所有 grade_quotas
+    const { data: quotas, error: quotaError } = await supabase
+      .from('grade_quotas')
+      .select('*');
+
+    if (quotaError) {
+      return NextResponse.json({ error: quotaError.message }, { status: 500 });
+    }
+
+    // 組合資料
+    const result = departments.map((dept) => {
+      const condition = conditions.find(c => c.department_id === dept.department_id);
+      const deptQuotas = quotas
+        .filter(q => q.department_id === dept.department_id)
+        .map(q => ({
+          grade: q.grade,
+          quota: q.quota
+        }));
+
+      let parsedRatio = {};
+      try {
+        parsedRatio = condition?.score_ratio ? JSON.parse(condition.score_ratio) : {};
+      } catch {
+        parsedRatio = {};
       }
 
-      if (row.grade !== null && row.quota !== null) {
-        existing.quotas.push({
-          grade: row.grade,
-          quota: row.quota,
-        });
-      }
-
-      return acc;
-    }, []);
-
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      return {
+        department_id: dept.department_id,
+        department_name: dept.department_name,
+        category: dept.category,
+        exam_subjects: condition?.exam_subjects || '',
+        score_ratio: parsedRatio,
+        remarks: condition?.remarks || '',
+        quotas: deptQuotas
+      };
     });
+
+    return NextResponse.json(result);
   } catch (error) {
-    console.error('❌ /api/conditions 資料庫查詢錯誤:', error);
-    return new Response('資料庫查詢錯誤', { status: 500 });
+    console.error('❌ Supabase 查詢錯誤:', error);
+    return NextResponse.json({ error: '查詢失敗' }, { status: 500 });
   }
 }
