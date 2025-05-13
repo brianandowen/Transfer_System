@@ -9,10 +9,10 @@ export const metadata = {
 };
 
 export default async function AdminSectionLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies(); // ✅ 加 await
-  const token = cookieStore.get('adminToken');
+  const cookieStore = await cookies();
+  const token = cookieStore.get('admin-auth'); // ✅ 改為正確名稱
 
-  if (!token || token.value !== 'valid') {
+  if (!token || token.value !== '1') {         // ✅ 改為正確值
     redirect('/login');
   }
 
