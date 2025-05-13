@@ -88,16 +88,7 @@ export async function PATCH(req: NextRequest, context: any) {
     return NextResponse.json({ message: condError.message }, { status: 500 });
   }
 
-  const { error: delQuotaError } = await supabase
-    .from('grade_quotas')
-    .delete()
-    .eq('department_id', id);
-
-  if (delQuotaError) {
-    console.error('❌ PATCH 刪除 quota 失敗:', delQuotaError.message);
-    return NextResponse.json({ message: delQuotaError.message }, { status: 500 });
-  }
-
+  // 不再 delete，直接用 upsert
   const formattedQuotas = (quotas || [])
     .filter((q: any) => q.grade && q.quota)
     .map((q: any) => ({
@@ -106,13 +97,13 @@ export async function PATCH(req: NextRequest, context: any) {
       quota: q.quota,
     }));
 
-  console.log('📦 插入的 quotas:', formattedQuotas);
+  console.log('📦 插入的 quotas (upsert):', formattedQuotas);
 
   const { error: insertQuotaError } = await supabase
-  .from('grade_quotas')
-  .upsert(formattedQuotas, {
-    onConflict: 'department_id, grade',
-  });
+    .from('grade_quotas')
+    .upsert(formattedQuotas, {
+      onConflict: 'department_id, grade',
+    });
 
   if (insertQuotaError) {
     console.error('❌ PATCH 插入 quota 失敗:', insertQuotaError.message);
