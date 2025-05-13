@@ -23,8 +23,10 @@ export async function POST(req: NextRequest) {
       path: '/',
       httpOnly: true,
       maxAge: 60 * 60 * 2,
+      sameSite: 'lax',             // ✅ 增加跨頁保留
+      secure: process.env.NODE_ENV === 'production', // ✅ 只有在 prod 加上 secure
     })
   );
-
+  
   return res;
 }
