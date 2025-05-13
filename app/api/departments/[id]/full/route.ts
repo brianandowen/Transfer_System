@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-// 取得完整資料
-export async function GET(req: NextRequest, context: any) {
+// GET：取得完整系所資料
+export async function GET(_: NextRequest, context: any) {
   const id = Number(context.params.id);
-  // 1. 取得 departments 資料
+
+  // 取得基本資料
   const { data: department, error: deptError } = await supabase
     .from('departments')
     .select('*')
@@ -15,15 +16,15 @@ export async function GET(req: NextRequest, context: any) {
     return NextResponse.json({ error: '找不到系所資料' }, { status: 404 });
   }
 
-  // 2. 取得條件資料
-  const { data: condition, error: condError } = await supabase
+  // 取得轉系條件
+  const { data: condition } = await supabase
     .from('transfer_conditions')
     .select('*')
     .eq('department_id', id)
     .single();
 
-  // 3. 取得名額資料
-  const { data: quotas, error: quotaError } = await supabase
+  // 取得名額
+  const { data: quotas } = await supabase
     .from('grade_quotas')
     .select('*')
     .eq('department_id', id);
@@ -37,14 +38,21 @@ export async function GET(req: NextRequest, context: any) {
   });
 }
 
-// 更新資料
-export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
+// PATCH：更新所有資料
+export async function PATCH(req: NextRequest, context: any) {
   const id = Number(context.params.id);
   const body = await req.json();
 
-  // 1. 更新 department 基本資料
-  const { department_name, category, exam_subjects, score_ratio, remarks, quotas } = body;
+  const {
+    department_name,
+    category,
+    exam_subjects,
+    score_ratio,
+    remarks,
+    quotas,
+  } = body;
 
+  // 更新基本資料
   const { error: deptError } = await supabase
     .from('departments')
     .update({ department_name, category })
@@ -54,7 +62,7 @@ export async function PATCH(req: NextRequest, context: { params: { id: string } 
     return NextResponse.json({ error: deptError.message }, { status: 500 });
   }
 
-  // 2. 更新條件資料（upsert）
+  // 更新轉系條件（upsert）
   const { error: condError } = await supabase
     .from('transfer_conditions')
     .upsert({
@@ -68,14 +76,14 @@ export async function PATCH(req: NextRequest, context: { params: { id: string } 
     return NextResponse.json({ error: condError.message }, { status: 500 });
   }
 
-  // 3. 更新名額（刪除舊的再插入）
-  const { error: delError } = await supabase
+  // 先刪除舊名額再插入新名額
+  const { error: delQuotaError } = await supabase
     .from('grade_quotas')
     .delete()
     .eq('department_id', id);
 
-  if (delError) {
-    return NextResponse.json({ error: delError.message }, { status: 500 });
+  if (delQuotaError) {
+    return NextResponse.json({ error: delQuotaError.message }, { status: 500 });
   }
 
   const formattedQuotas = (quotas || []).map((q: any) => ({
@@ -84,22 +92,21 @@ export async function PATCH(req: NextRequest, context: { params: { id: string } 
     quota: q.quota,
   }));
 
-  const { error: insertError } = await supabase
+  const { error: insertQuotaError } = await supabase
     .from('grade_quotas')
     .insert(formattedQuotas);
 
-  if (insertError) {
-    return NextResponse.json({ error: insertError.message }, { status: 500 });
+  if (insertQuotaError) {
+    return NextResponse.json({ error: insertQuotaError.message }, { status: 500 });
   }
 
   return NextResponse.json({ message: '更新成功' });
 }
 
-// 刪除資料
-export async function DELETE(_: NextRequest, context: { params: { id: string } }) {
+// DELETE：刪除整筆資料
+export async function DELETE(_: NextRequest, context: any) {
   const id = Number(context.params.id);
 
-  // 先刪 transfer_conditions & quotas，再刪 department
   const { error: condError } = await supabase
     .from('transfer_conditions')
     .delete()
