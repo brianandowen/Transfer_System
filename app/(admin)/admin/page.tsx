@@ -13,13 +13,21 @@ export default function DepartmentListPage() {
   const router = useRouter();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [search, setSearch] = useState('');
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     async function fetchDepartments() {
-      const res = await fetch('/api/departments');
-      const data = await res.json();
-      setDepartments(data.departments);
+      try {
+        const res = await fetch('/api/departments');
+        const data = await res.json();
+        setDepartments(data.departments || data || []); // ✅ 防止 undefined
+      } catch (err) {
+        console.error('❌ 系所資料載入失敗:', err);
+        setDepartments([]);
+        setError(true); // ✅ 顯示錯誤狀態
+      }
     }
+
     fetchDepartments();
   }, []);
 
@@ -49,7 +57,9 @@ export default function DepartmentListPage() {
       />
 
       {/* Department list */}
-      {filtered.length > 0 ? (
+      {error ? (
+        <p className="text-red-400">⚠️ 無法載入系所資料，請稍後再試。</p>
+      ) : filtered.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((dep) => (
             <div
