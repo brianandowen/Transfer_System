@@ -8,7 +8,6 @@ async function getDepartmentData(id: number) {
   return data.find((item: any) => item.department_id === id);
 }
 
-// ✅ 避免使用函式名 Page，改為 TransferConditionDetailPage
 export default async function TransferConditionDetailPage({
   params,
 }: {
