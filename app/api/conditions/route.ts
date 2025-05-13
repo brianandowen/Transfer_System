@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET(req: NextRequest) {
   try {
-    // 抓出所有 departments
     const { data: departments, error: deptError } = await supabase
       .from('departments')
       .select('*')
@@ -13,7 +12,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: deptError.message }, { status: 500 });
     }
 
-    // 抓出所有 transfer_conditions
     const { data: conditions, error: condError } = await supabase
       .from('transfer_conditions')
       .select('*');
@@ -22,7 +20,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: condError.message }, { status: 500 });
     }
 
-    // 抓出所有 grade_quotas
     const { data: quotas, error: quotaError } = await supabase
       .from('grade_quotas')
       .select('*');
@@ -31,7 +28,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: quotaError.message }, { status: 500 });
     }
 
-    // 組合資料
     const result = departments.map((dept) => {
       const condition = conditions.find(c => c.department_id === dept.department_id);
       const deptQuotas = quotas
@@ -44,7 +40,8 @@ export async function GET(req: NextRequest) {
       let parsedRatio = {};
       try {
         parsedRatio = condition?.score_ratio ? JSON.parse(condition.score_ratio) : {};
-      } catch {
+      } catch (err) {
+        console.error(`❌ JSON parse error in department ${dept.department_id}:`, err);
         parsedRatio = {};
       }
 
