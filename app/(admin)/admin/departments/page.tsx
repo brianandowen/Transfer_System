@@ -12,27 +12,34 @@ export default function NewDepartmentPage() {
     category: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const payload = {
+      ...form,
+      department_id: Number(form.department_id), // ✅ 確保為數字
+    };
+
     try {
       const res = await fetch('/api/departments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
       if (res.ok) {
         alert('✅ 新增成功');
-        router.push('/admin/departments');
+        router.push('/admin'); // ✅ 如果是 /admin 才是清單頁，否則可改為 /admin/departments
       } else {
-        alert('❌ 新增失敗：' + data.message);
+        alert('❌ 新增失敗：' + (data.message || '未知錯誤'));
       }
     } catch (error) {
       alert('🚨 系統錯誤，請稍後再試');
@@ -43,12 +50,16 @@ export default function NewDepartmentPage() {
   return (
     <div className="p-6 max-w-xl">
       <h1 className="text-2xl font-bold text-blue-300 mb-6">新增系所</h1>
-      <form onSubmit={handleSubmit} className="space-y-4 bg-gray-700 p-6 rounded-lg">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 bg-gray-700 p-6 rounded-lg"
+      >
         <div>
           <label className="block mb-1">系所 ID</label>
           <input
             type="number"
             name="department_id"
+            placeholder="請輸入數字 ID"
             value={form.department_id}
             onChange={handleChange}
             className="w-full p-2 rounded bg-gray-800 border border-gray-600"
@@ -60,6 +71,7 @@ export default function NewDepartmentPage() {
           <input
             type="text"
             name="department_name"
+            placeholder="例如：資訊工程學系"
             value={form.department_name}
             onChange={handleChange}
             className="w-full p-2 rounded bg-gray-800 border border-gray-600"
