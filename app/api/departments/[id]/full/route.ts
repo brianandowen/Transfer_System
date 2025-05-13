@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-export async function PUT(req: NextRequest, context: { params: Record<string, string> }) {
+export async function PUT(req: NextRequest, context: any) {
   const id = context.params.id;
   const body = await req.json();
 
@@ -17,7 +17,7 @@ export async function PUT(req: NextRequest, context: { params: Record<string, st
   return NextResponse.json({ message: '更新成功' });
 }
 
-export async function DELETE(_: NextRequest, context: { params: Record<string, string> }) {
+export async function DELETE(_: NextRequest, context: any) {
   const id = context.params.id;
 
   const { error } = await supabase
