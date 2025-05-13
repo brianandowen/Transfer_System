@@ -12,34 +12,50 @@ export default function NewDepartmentPage() {
     category: '',
   });
 
+  const [isLoading, setIsLoading] = useState(true);
+
   // 自動取得下一個 ID
   useEffect(() => {
     async function fetchNextId() {
       try {
         const res = await fetch('/api/departments/next-id');
         const data = await res.json();
-        setForm(f => ({ ...f, department_id: data.next_id }));
+        setForm((f) => ({ ...f, department_id: data.next_id }));
       } catch (err) {
         console.error('❌ 無法取得下一個 ID:', err);
         alert('🚨 無法載入下一個系所編號');
+      } finally {
+        setIsLoading(false);
       }
     }
 
     fetchNextId();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!form.department_id || isLoading) {
+      alert('🚫 系所 ID 尚未載入完成，請稍後再試');
+      return;
+    }
+
+    const payload = {
+      ...form,
+      department_id: Number(form.department_id),
+    };
+
     try {
       const res = await fetch('/api/departments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -48,7 +64,7 @@ export default function NewDepartmentPage() {
         alert('✅ 新增成功');
         router.push(`/admin/mbti-recommendations/new?department_id=${form.department_id}`);
       } else {
-        alert('❌ 新增失敗：' + data.message);
+        alert('❌ 新增失敗：' + (data.message || '未知錯誤'));
       }
     } catch (error) {
       alert('🚨 系統錯誤，請稍後再試');
@@ -59,7 +75,10 @@ export default function NewDepartmentPage() {
   return (
     <div className="p-6 max-w-xl">
       <h1 className="text-2xl font-bold text-blue-300 mb-6">新增系所</h1>
-      <form onSubmit={handleSubmit} className="space-y-4 bg-gray-700 p-6 rounded-lg">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 bg-gray-700 p-6 rounded-lg"
+      >
         <div>
           <label className="block mb-1">系所 ID</label>
           <input
@@ -67,6 +86,7 @@ export default function NewDepartmentPage() {
             name="department_id"
             value={form.department_id}
             readOnly
+            placeholder="自動生成中..."
             className="w-full p-2 rounded bg-gray-800 border border-gray-600 text-gray-400"
           />
         </div>
