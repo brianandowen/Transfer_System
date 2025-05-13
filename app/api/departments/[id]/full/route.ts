@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const id = params.id;
+export async function PUT(req: NextRequest, context: { params: { id: string } }) {
+  const id = context.params.id;
   const body = await req.json();
 
   const { error } = await supabase
@@ -17,8 +17,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({ message: '更新成功' });
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  const id = params.id;
+export async function DELETE(_: NextRequest, context: { params: { id: string } }) {
+  const id = context.params.id;
 
   const { error } = await supabase
     .from('departments')
