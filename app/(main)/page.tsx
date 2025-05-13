@@ -13,7 +13,7 @@ export default function HomePage() {
     fetch('/api/conditions')
       .then((res) => res.json())
       .then((data) => setData(data))
-      .catch((err) => console.error('API錯誤', err));
+      .catch((err) => console.error('❌ API錯誤:', err));
   }, []);
 
   const categories = Array.from(new Set(data.map((item) => item.category)));
@@ -31,7 +31,6 @@ export default function HomePage() {
   return (
     <main className="bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-100 min-h-screen py-12 px-6">
       <div className="max-w-7xl mx-auto">
-
         {/* 標題 */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-extrabold text-blue-700 dark:text-blue-300">📚 系所總覽</h1>
@@ -82,7 +81,7 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* 系所卡片 Grid（等高） */}
+        {/* 系所卡片 Grid */}
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 items-stretch">
           {filteredData.length > 0 ? (
             filteredData.map((item) => (
@@ -92,18 +91,13 @@ export default function HomePage() {
 
                   <div className="mb-3">
                     <h4 className="font-semibold text-sm text-gray-500 dark:text-gray-400 mb-1">轉入年級與名額：</h4>
-                    {item.score_ratio && typeof item.score_ratio === 'object' && Object.keys(item.score_ratio).length > 0 ? (
-  <ul className="text-sm text-gray-700 dark:text-gray-200">
-    {Object.entries(item.score_ratio).map(([subject, percent]: any, index) => (
-      <li key={index}>
-        {subject}：{percent}%
-      </li>
-    ))}
-  </ul>
-) : (
-  <p className="text-sm text-gray-500 dark:text-gray-400">無成績比例資料</p>
-)}
-
+                    <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-200">
+                      {item.quotas.map((q: any, index: number) => (
+                        <li key={index}>
+                          {q.grade} 年級 — {q.quota} 名
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
                   <div className="mb-3">
@@ -113,13 +107,27 @@ export default function HomePage() {
 
                   <div className="mt-auto">
                     <h4 className="font-semibold text-sm text-gray-500 dark:text-gray-400 mb-1">成績比例：</h4>
-                    <ul className="text-sm text-gray-700 dark:text-gray-200">
-                      {Object.entries(item.score_ratio).map(([subject, percent]: any, index) => (
-                        <li key={index}>
-                          {subject}：{percent}%
-                        </li>
-                      ))}
-                    </ul>
+                    {(() => {
+                      let ratio = item.score_ratio;
+                      try {
+                        if (typeof ratio === 'string') {
+                          ratio = JSON.parse(ratio);
+                        }
+                      } catch (e) {
+                        console.error('❌ 無法解析 score_ratio:', e, ratio);
+                        ratio = {};
+                      }
+
+                      return ratio && typeof ratio === 'object' && Object.keys(ratio).length > 0 ? (
+                        <ul className="text-sm text-gray-700 dark:text-gray-200">
+                          {Object.entries(ratio).map(([subject, percent], index) => (
+                            <li key={index}>{subject}：{percent}%</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">無成績比例資料</p>
+                      );
+                    })()}
                   </div>
                 </div>
               </Link>
