@@ -9,7 +9,7 @@ async function getDepartmentData(id: number) {
 }
 
 export default async function TransferConditionDetailPage(
-  props: { params: { id: string } }
+  {params}: { params: { id: string } }
 ): Promise<JSX.Element> {
   const id = parseInt(props.params.id, 10);
   const department = await getDepartmentData(id);
