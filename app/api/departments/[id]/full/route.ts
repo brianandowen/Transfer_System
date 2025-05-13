@@ -109,8 +109,10 @@ export async function PATCH(req: NextRequest, context: any) {
   console.log('📦 插入的 quotas:', formattedQuotas);
 
   const { error: insertQuotaError } = await supabase
-    .from('grade_quotas')
-    .insert(formattedQuotas);
+  .from('grade_quotas')
+  .upsert(formattedQuotas, {
+    onConflict: 'department_id, grade',
+  });
 
   if (insertQuotaError) {
     console.error('❌ PATCH 插入 quota 失敗:', insertQuotaError.message);
