@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 // 取得完整資料
-export async function GET(_: NextRequest, context: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: any) {
   const id = Number(context.params.id);
-
   // 1. 取得 departments 資料
   const { data: department, error: deptError } = await supabase
     .from('departments')
