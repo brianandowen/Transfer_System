@@ -104,31 +104,31 @@ export default function HomePage() {
                     <h4 className="font-semibold text-sm text-gray-500 dark:text-gray-400 mb-1">考試科目：</h4>
                     <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line">{item.exam_subjects}</p>
                   </div>
+<div className="mt-auto">
+  <h4 className="font-semibold text-sm text-gray-500 dark:text-gray-400 mb-1">成績比例：</h4>
+  {(() => {
+    let ratio = item.score_ratio;
 
-                  <div className="mt-auto">
-                    <h4 className="font-semibold text-sm text-gray-500 dark:text-gray-400 mb-1">成績比例：</h4>
-                    {(() => {
-                      let ratio = item.score_ratio;
-                      try {
-                        if (typeof ratio === 'string') {
-                          ratio = JSON.parse(ratio);
-                        }
-                      } catch (e) {
-                        console.error('❌ 無法解析 score_ratio:', e, ratio);
-                        ratio = {};
-                      }
+    try {
+      if (typeof ratio === 'string') {
+        ratio = JSON.parse(ratio);
+      }
+    } catch (e) {
+      console.error('❌ 無法解析 score_ratio:', e, ratio);
+      ratio = {};
+    }
 
-                      return ratio && typeof ratio === 'object' && Object.keys(ratio).length > 0 ? (
-                        <ul className="text-sm text-gray-700 dark:text-gray-200">
-                          {Object.entries(ratio).map(([subject, percent], index) => (
-                            <li key={index}>{subject}：{percent}%</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-sm text-gray-500 dark:text-gray-400">無成績比例資料</p>
-                      );
-                    })()}
-                  </div>
+    return ratio && typeof ratio === 'object' && Object.keys(ratio).length > 0 ? (
+      <ul className="text-sm text-gray-700 dark:text-gray-200">
+        {Object.entries(ratio as Record<string, any>).map(([subject, percent], index) => (
+          <li key={index}>{subject}：{percent}%</li>
+        ))}
+      </ul>
+    ) : (
+      <p className="text-sm text-gray-500 dark:text-gray-400">無成績比例資料</p>
+    );
+  })()}
+</div>
                 </div>
               </Link>
             ))
