@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-// GET：取得完整系所資料
+// GET：取得完整資料
 export async function GET(_: NextRequest, context: any) {
   const rawId = context.params?.id;
   const id = Number(rawId);
@@ -28,7 +28,7 @@ export async function GET(_: NextRequest, context: any) {
 
   const { data: quotas } = await supabase
     .from('grade_quotas')
-    .select('*')
+    .select('grade, quota') // ✅ 只拿你需要的欄位，避免 quota_id 問題
     .eq('department_id', id);
 
   return NextResponse.json({
@@ -40,7 +40,7 @@ export async function GET(_: NextRequest, context: any) {
   });
 }
 
-// PATCH：更新所有資料
+// PATCH：更新全部資料
 export async function PATCH(req: NextRequest, context: any) {
   const rawId = context.params?.id;
   const id = Number(rawId);
@@ -50,7 +50,6 @@ export async function PATCH(req: NextRequest, context: any) {
   }
 
   const body = await req.json();
-
   const {
     department_name,
     category,
