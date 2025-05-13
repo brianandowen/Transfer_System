@@ -92,13 +92,18 @@ export default function HomePage() {
 
                   <div className="mb-3">
                     <h4 className="font-semibold text-sm text-gray-500 dark:text-gray-400 mb-1">轉入年級與名額：</h4>
-                    <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-200">
-                      {item.quotas.map((q: any, index: number) => (
-                        <li key={index}>
-                          {q.grade} 年級 — {q.quota} 名
-                        </li>
-                      ))}
-                    </ul>
+                    {item.score_ratio && typeof item.score_ratio === 'object' && Object.keys(item.score_ratio).length > 0 ? (
+  <ul className="text-sm text-gray-700 dark:text-gray-200">
+    {Object.entries(item.score_ratio).map(([subject, percent]: any, index) => (
+      <li key={index}>
+        {subject}：{percent}%
+      </li>
+    ))}
+  </ul>
+) : (
+  <p className="text-sm text-gray-500 dark:text-gray-400">無成績比例資料</p>
+)}
+
                   </div>
 
                   <div className="mb-3">
