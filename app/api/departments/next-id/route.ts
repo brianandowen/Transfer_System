@@ -9,10 +9,11 @@ export async function GET() {
     .limit(1);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ message: error.message }, { status: 500 });
   }
 
-  const nextId = data && data.length > 0 ? data[0].department_id + 1 : 1;
+  const lastId = Number(data?.[0]?.department_id || 0);
+  const next_id = lastId + 1;
 
-  return NextResponse.json({ nextId });
+  return NextResponse.json({ next_id });
 }
