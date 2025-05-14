@@ -48,7 +48,6 @@ export async function PATCH(req: NextRequest, context: any) {
   const id = Number(rawId);
 
   if (!id || isNaN(id)) {
-    console.error('❌ PATCH：無效 ID', rawId);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
@@ -64,16 +63,17 @@ export async function PATCH(req: NextRequest, context: any) {
     quotas,
   } = body;
 
+  // 更新 departments
   const { error: deptError } = await supabase
     .from('departments')
     .update({ department_name, category })
     .eq('department_id', id);
 
   if (deptError) {
-    console.error('❌ PATCH 更新 department 失敗:', deptError.message);
     return NextResponse.json({ message: deptError.message }, { status: 500 });
   }
 
+  // 更新 transfer_conditions
   const { error: condError } = await supabase
     .from('transfer_conditions')
     .upsert({
@@ -84,11 +84,19 @@ export async function PATCH(req: NextRequest, context: any) {
     });
 
   if (condError) {
-    console.error('❌ PATCH 更新 condition 失敗:', condError.message);
     return NextResponse.json({ message: condError.message }, { status: 500 });
   }
 
-  // 不再 delete，直接用 upsert
+  // 刪除原 quota 再插入新 quota
+  const { error: delError } = await supabase
+    .from('grade_quotas')
+    .delete()
+    .eq('department_id', id);
+
+  if (delError) {
+    return NextResponse.json({ message: delError.message }, { status: 500 });
+  }
+
   const formattedQuotas = (quotas || [])
     .filter((q: any) => q.grade && q.quota)
     .map((q: any) => ({
@@ -97,20 +105,14 @@ export async function PATCH(req: NextRequest, context: any) {
       quota: q.quota,
     }));
 
-  console.log('📦 插入的 quotas (upsert):', formattedQuotas);
-
-  const { error: insertQuotaError } = await supabase
+  const { error: insertError } = await supabase
     .from('grade_quotas')
-    .upsert(formattedQuotas, {
-      onConflict: 'department_id, grade',
-    });
+    .insert(formattedQuotas);
 
-  if (insertQuotaError) {
-    console.error('❌ PATCH 插入 quota 失敗:', insertQuotaError.message);
-    return NextResponse.json({ message: insertQuotaError.message }, { status: 500 });
+  if (insertError) {
+    return NextResponse.json({ message: insertError.message }, { status: 500 });
   }
 
-  console.log('✅ PATCH 更新成功');
   return NextResponse.json({ message: '更新成功' });
 }
 
