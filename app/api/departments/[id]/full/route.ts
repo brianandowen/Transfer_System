@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 // GET：取得完整資料
-export async function GET(_: NextRequest, context: any) {
-  const rawId = context.params?.id;
-  const id = Number(rawId);
+export async function GET(
+  _: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const id = Number(params.id);
 
   if (!id || isNaN(id)) {
-    console.error('❌ GET：無效 ID', rawId);
+    console.error('❌ GET：無效 ID', params.id);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
@@ -43,9 +45,11 @@ export async function GET(_: NextRequest, context: any) {
 }
 
 // PATCH：更新所有資料
-export async function PATCH(req: NextRequest, context: any) {
-  const rawId = context.params?.id;
-  const id = Number(rawId);
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const id = Number(params.id);
 
   if (!id || isNaN(id)) {
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
@@ -87,7 +91,7 @@ export async function PATCH(req: NextRequest, context: any) {
     return NextResponse.json({ message: condError.message }, { status: 500 });
   }
 
-  // 刪除原 quota 再插入新 quota
+  // 刪除原 quota
   const { error: delError } = await supabase
     .from('grade_quotas')
     .delete()
@@ -97,13 +101,16 @@ export async function PATCH(req: NextRequest, context: any) {
     return NextResponse.json({ message: delError.message }, { status: 500 });
   }
 
+  // 插入新 quota
   const formattedQuotas = (quotas || [])
     .filter((q: any) => q.grade && q.quota)
     .map((q: any) => ({
       department_id: id,
       grade: q.grade,
-      quota: q.quota,
+      quota: Number(q.quota), // ✅ 確保 quota 是數字
     }));
+
+  console.log('📦 插入 formatted quotas:', formattedQuotas);
 
   const { error: insertError } = await supabase
     .from('grade_quotas')
@@ -117,12 +124,14 @@ export async function PATCH(req: NextRequest, context: any) {
 }
 
 // DELETE：刪除整筆資料
-export async function DELETE(_: NextRequest, context: any) {
-  const rawId = context.params?.id;
-  const id = Number(rawId);
+export async function DELETE(
+  _: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const id = Number(params.id);
 
   if (!id || isNaN(id)) {
-    console.error('❌ DELETE：無效 ID', rawId);
+    console.error('❌ DELETE：無效 ID', params.id);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
