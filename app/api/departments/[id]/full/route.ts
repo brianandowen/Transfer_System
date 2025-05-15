@@ -61,7 +61,7 @@ export async function PATCH(req: NextRequest, context: any) {
     quotas,
   } = body;
 
-  // 更新 departments
+  // ✅ 更新 departments
   const { error: deptError } = await supabase
     .from('departments')
     .update({ department_name, category })
@@ -71,23 +71,26 @@ export async function PATCH(req: NextRequest, context: any) {
     return NextResponse.json({ message: deptError.message }, { status: 500 });
   }
 
-  // 更新 transfer_conditions（關鍵修正 onConflict）
+  // ✅ 更新 transfer_conditions，避免覆蓋主鍵 condition_id
   const { error: condError } = await supabase
     .from('transfer_conditions')
-    .upsert({
-      department_id: id,
-      exam_subjects,
-      score_ratio,
-      remarks,
-    }, {
-      onConflict: 'department_id', // ✅ 防止覆蓋 condition_id
-    });
+    .upsert(
+      {
+        department_id: id,
+        exam_subjects,
+        score_ratio,
+        remarks,
+      },
+      {
+        onConflict: 'department_id', // ✅ 防止覆蓋 condition_id
+      }
+    );
 
   if (condError) {
     return NextResponse.json({ message: condError.message }, { status: 500 });
   }
 
-  // 全刪舊 quota 再插入新 quota
+  // ✅ 刪除原 quota 再插入新 quota
   const { error: delError } = await supabase
     .from('grade_quotas')
     .delete()
