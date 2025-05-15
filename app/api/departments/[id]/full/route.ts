@@ -54,9 +54,7 @@ export async function GET(_: NextRequest, context: any) {
 export async function PATCH(req: NextRequest, context: any) {
   const rawId = context.params?.id;
   const id = Number(rawId);
-
   if (!id || isNaN(id)) {
-    console.error('❌ PATCH：無效 ID', rawId);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
@@ -72,47 +70,60 @@ export async function PATCH(req: NextRequest, context: any) {
     quotas,
   } = body;
 
+  // ✅ 更新 departments
   const { error: deptError } = await supabase
     .from('departments')
     .update({ department_name, category })
     .eq('department_id', id);
-
   if (deptError) {
-    console.error('❌ PATCH 更新 department 失敗:', deptError.message);
     return NextResponse.json({ message: deptError.message }, { status: 500 });
   }
 
-// ✅ 更新 transfer_conditions，避免覆蓋主鍵 condition_id
-const { error: condError } = await supabase
-  .from('transfer_conditions')
-  .upsert(
-    {
-      department_id: id,
-      exam_subjects,
-      score_ratio,
-      remarks,
-    },
-    {
-      onConflict: 'department_id',
-    }
-  );
+  // ✅ 檢查是否已有 condition 資料
+  const { data: existingCond, error: checkCondError } = await supabase
+    .from('transfer_conditions')
+    .select('condition_id')
+    .eq('department_id', id)
+    .maybeSingle();
+  if (checkCondError) {
+    return NextResponse.json({ message: checkCondError.message }, { status: 500 });
+  }
 
-if (condError) {
-  console.error('❌ transfer_conditions upsert error:', condError);
-  return NextResponse.json({ message: condError.message }, { status: 500 });
-}
+  let condResult;
+  if (existingCond) {
+    condResult = await supabase
+      .from('transfer_conditions')
+      .update({
+        exam_subjects,
+        score_ratio,
+        remarks,
+      })
+      .eq('condition_id', existingCond.condition_id);
+  } else {
+    condResult = await supabase
+      .from('transfer_conditions')
+      .insert({
+        department_id: id,
+        exam_subjects,
+        score_ratio,
+        remarks,
+      });
+  }
 
+  if (condResult.error) {
+    return NextResponse.json({ message: condResult.error.message }, { status: 500 });
+  }
 
+  // ✅ 刪除舊 quota
   const { error: delError } = await supabase
     .from('grade_quotas')
     .delete()
     .eq('department_id', id);
-
   if (delError) {
-    console.error('❌ PATCH 刪除 quota 失敗:', delError.message);
     return NextResponse.json({ message: delError.message }, { status: 500 });
   }
 
+  // ✅ 插入新 quota
   const formattedQuotas = (quotas || [])
     .filter((q: any) => q.grade && q.quota)
     .map((q: any) => ({
@@ -120,13 +131,10 @@ if (condError) {
       grade: q.grade,
       quota: q.quota,
     }));
-
   const { error: insertError } = await supabase
     .from('grade_quotas')
     .insert(formattedQuotas);
-
   if (insertError) {
-    console.error('❌ PATCH 插入 quota 失敗:', insertError.message);
     return NextResponse.json({ message: insertError.message }, { status: 500 });
   }
 
