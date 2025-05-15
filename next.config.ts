@@ -4,10 +4,8 @@ const nextConfig = {
     serverActions: true,
   },
   eslint: {
-    ignoreDuringBuilds: true, // ✅ 忽略 ESLint 錯誤
+    ignoreDuringBuilds: true,
   },
-  // ✅ 加入 middleware 路由匹配條件
-  matcher: ['/admin/:path*'],
 };
 
 export default nextConfig;

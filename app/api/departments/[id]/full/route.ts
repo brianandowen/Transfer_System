@@ -2,14 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 // GET：取得完整資料
-export async function GET(
-  _: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const id = Number(params.id);
+export async function GET(_: NextRequest, context: any) {
+  const rawId = context.params?.id;
+  const id = Number(rawId);
 
   if (!id || isNaN(id)) {
-    console.error('❌ GET：無效 ID', params.id);
+    console.error('❌ GET：無效 ID', rawId);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
@@ -45,11 +43,9 @@ export async function GET(
 }
 
 // PATCH：更新所有資料
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const id = Number(params.id);
+export async function PATCH(req: NextRequest, context: any) {
+  const rawId = context.params?.id;
+  const id = Number(rawId);
 
   if (!id || isNaN(id)) {
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
@@ -67,6 +63,7 @@ export async function PATCH(
     quotas,
   } = body;
 
+  // 更新 departments
   const { error: deptError } = await supabase
     .from('departments')
     .update({ department_name, category })
@@ -76,6 +73,7 @@ export async function PATCH(
     return NextResponse.json({ message: deptError.message }, { status: 500 });
   }
 
+  // 更新 transfer_conditions
   const { error: condError } = await supabase
     .from('transfer_conditions')
     .upsert({
@@ -89,6 +87,7 @@ export async function PATCH(
     return NextResponse.json({ message: condError.message }, { status: 500 });
   }
 
+  // 刪除原 quota 再插入新 quota
   const { error: delError } = await supabase
     .from('grade_quotas')
     .delete()
@@ -103,7 +102,7 @@ export async function PATCH(
     .map((q: any) => ({
       department_id: id,
       grade: q.grade,
-      quota: Number(q.quota), // ✅ 確保是數字
+      quota: q.quota,
     }));
 
   const { error: insertError } = await supabase
@@ -118,14 +117,12 @@ export async function PATCH(
 }
 
 // DELETE：刪除整筆資料
-export async function DELETE(
-  _: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const id = Number(params.id);
+export async function DELETE(_: NextRequest, context: any) {
+  const rawId = context.params?.id;
+  const id = Number(rawId);
 
   if (!id || isNaN(id)) {
-    console.error('❌ DELETE：無效 ID', params.id);
+    console.error('❌ DELETE：無效 ID', rawId);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
@@ -151,5 +148,6 @@ export async function DELETE(
     return NextResponse.json({ message: firstError.message }, { status: 500 });
   }
 
+  console.log('✅ DELETE 成功');
   return NextResponse.json({ message: '刪除成功' });
 }
