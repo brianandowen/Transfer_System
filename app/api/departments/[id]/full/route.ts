@@ -82,21 +82,26 @@ export async function PATCH(req: NextRequest, context: any) {
     return NextResponse.json({ message: deptError.message }, { status: 500 });
   }
 
-  const { error: condError } = await supabase
-    .from('transfer_conditions')
-    .upsert({
+// ✅ 更新 transfer_conditions，避免覆蓋主鍵 condition_id
+const { error: condError } = await supabase
+  .from('transfer_conditions')
+  .upsert(
+    {
       department_id: id,
       exam_subjects,
       score_ratio,
       remarks,
-    }, {
+    },
+    {
       onConflict: 'department_id',
-    });
+    }
+  );
 
-  if (condError) {
-    console.error('❌ PATCH 更新 condition 失敗:', condError.message);
-    return NextResponse.json({ message: condError.message }, { status: 500 });
-  }
+if (condError) {
+  console.error('❌ transfer_conditions upsert error:', condError);
+  return NextResponse.json({ message: condError.message }, { status: 500 });
+}
+
 
   const { error: delError } = await supabase
     .from('grade_quotas')
