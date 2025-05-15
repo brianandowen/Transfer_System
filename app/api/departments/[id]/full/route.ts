@@ -7,6 +7,7 @@ export async function GET(_: NextRequest, context: any) {
   const id = Number(rawId);
 
   if (!id || isNaN(id)) {
+    console.error('❌ GET：無效 ID', rawId);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
@@ -17,19 +18,28 @@ export async function GET(_: NextRequest, context: any) {
     .single();
 
   if (deptError || !department) {
+    console.error('❌ GET：找不到系所', deptError?.message);
     return NextResponse.json({ message: '找不到系所資料' }, { status: 404 });
   }
 
-  const { data: condition } = await supabase
+  const { data: condition, error: condError } = await supabase
     .from('transfer_conditions')
     .select('*')
     .eq('department_id', id)
-    .single();
+    .maybeSingle();
 
-  const { data: quotas } = await supabase
+  if (condError) {
+    console.error('❌ GET：讀取條件錯誤', condError.message);
+  }
+
+  const { data: quotas, error: quotaError } = await supabase
     .from('grade_quotas')
     .select('grade, quota')
     .eq('department_id', id);
+
+  if (quotaError) {
+    console.error('❌ GET：讀取名額錯誤', quotaError.message);
+  }
 
   return NextResponse.json({
     ...department,
@@ -46,6 +56,7 @@ export async function PATCH(req: NextRequest, context: any) {
   const id = Number(rawId);
 
   if (!id || isNaN(id)) {
+    console.error('❌ PATCH：無效 ID', rawId);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
@@ -61,42 +72,39 @@ export async function PATCH(req: NextRequest, context: any) {
     quotas,
   } = body;
 
-  // ✅ 更新 departments
   const { error: deptError } = await supabase
     .from('departments')
     .update({ department_name, category })
     .eq('department_id', id);
 
   if (deptError) {
+    console.error('❌ PATCH 更新 department 失敗:', deptError.message);
     return NextResponse.json({ message: deptError.message }, { status: 500 });
   }
 
-  // ✅ 更新 transfer_conditions，避免覆蓋主鍵 condition_id
   const { error: condError } = await supabase
     .from('transfer_conditions')
-    .upsert(
-      {
-        department_id: id,
-        exam_subjects,
-        score_ratio,
-        remarks,
-      },
-      {
-        onConflict: 'department_id', // ✅ 防止覆蓋 condition_id
-      }
-    );
+    .upsert({
+      department_id: id,
+      exam_subjects,
+      score_ratio,
+      remarks,
+    }, {
+      onConflict: 'department_id',
+    });
 
   if (condError) {
+    console.error('❌ PATCH 更新 condition 失敗:', condError.message);
     return NextResponse.json({ message: condError.message }, { status: 500 });
   }
 
-  // ✅ 刪除原 quota 再插入新 quota
   const { error: delError } = await supabase
     .from('grade_quotas')
     .delete()
     .eq('department_id', id);
 
   if (delError) {
+    console.error('❌ PATCH 刪除 quota 失敗:', delError.message);
     return NextResponse.json({ message: delError.message }, { status: 500 });
   }
 
@@ -113,9 +121,11 @@ export async function PATCH(req: NextRequest, context: any) {
     .insert(formattedQuotas);
 
   if (insertError) {
+    console.error('❌ PATCH 插入 quota 失敗:', insertError.message);
     return NextResponse.json({ message: insertError.message }, { status: 500 });
   }
 
+  console.log('✅ PATCH 更新成功');
   return NextResponse.json({ message: '更新成功' });
 }
 
@@ -125,6 +135,7 @@ export async function DELETE(_: NextRequest, context: any) {
   const id = Number(rawId);
 
   if (!id || isNaN(id)) {
+    console.error('❌ DELETE：無效 ID', rawId);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
@@ -146,8 +157,10 @@ export async function DELETE(_: NextRequest, context: any) {
   const firstError = condError || quotaError || deptError;
 
   if (firstError) {
+    console.error('❌ DELETE 發生錯誤:', firstError.message);
     return NextResponse.json({ message: firstError.message }, { status: 500 });
   }
 
+  console.log('✅ DELETE 成功');
   return NextResponse.json({ message: '刪除成功' });
 }
