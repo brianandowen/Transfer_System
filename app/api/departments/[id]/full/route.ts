@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import type { RouteHandlerContext } from 'next/dist/server/web/types';
 
 // GET：取得完整資料
 export async function GET(
   _: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteHandlerContext
 ) {
-  const id = Number(params.id);
+  const id = Number(context.params.id);
 
   if (!id || isNaN(id)) {
-    console.error('❌ GET：無效 ID', params.id);
+    console.error('❌ GET：無效 ID', context.params.id);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
@@ -47,9 +48,9 @@ export async function GET(
 // PATCH：更新所有資料
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteHandlerContext
 ) {
-  const id = Number(params.id);
+  const id = Number(context.params.id);
 
   if (!id || isNaN(id)) {
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
@@ -67,7 +68,6 @@ export async function PATCH(
     quotas,
   } = body;
 
-  // 更新 departments
   const { error: deptError } = await supabase
     .from('departments')
     .update({ department_name, category })
@@ -77,7 +77,6 @@ export async function PATCH(
     return NextResponse.json({ message: deptError.message }, { status: 500 });
   }
 
-  // 更新 transfer_conditions
   const { error: condError } = await supabase
     .from('transfer_conditions')
     .upsert({
@@ -91,7 +90,6 @@ export async function PATCH(
     return NextResponse.json({ message: condError.message }, { status: 500 });
   }
 
-  // 刪除原 quota
   const { error: delError } = await supabase
     .from('grade_quotas')
     .delete()
@@ -101,13 +99,12 @@ export async function PATCH(
     return NextResponse.json({ message: delError.message }, { status: 500 });
   }
 
-  // 插入新 quota
   const formattedQuotas = (quotas || [])
     .filter((q: any) => q.grade && q.quota)
     .map((q: any) => ({
       department_id: id,
       grade: q.grade,
-      quota: Number(q.quota), // ✅ 確保 quota 是數字
+      quota: Number(q.quota),
     }));
 
   console.log('📦 插入 formatted quotas:', formattedQuotas);
@@ -126,12 +123,12 @@ export async function PATCH(
 // DELETE：刪除整筆資料
 export async function DELETE(
   _: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteHandlerContext
 ) {
-  const id = Number(params.id);
+  const id = Number(context.params.id);
 
   if (!id || isNaN(id)) {
-    console.error('❌ DELETE：無效 ID', params.id);
+    console.error('❌ DELETE：無效 ID', context.params.id);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
