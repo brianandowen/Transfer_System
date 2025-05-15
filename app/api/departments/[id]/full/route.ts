@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import type { RouteHandlerContext } from 'next/dist/server/web/types';
 
 // GET：取得完整資料
 export async function GET(
   _: NextRequest,
-  context: RouteHandlerContext
+  { params }: { params: { id: string } }
 ) {
-  const id = Number(context.params.id);
+  const id = Number(params.id);
 
   if (!id || isNaN(id)) {
-    console.error('❌ GET：無效 ID', context.params.id);
+    console.error('❌ GET：無效 ID', params.id);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
@@ -48,9 +47,9 @@ export async function GET(
 // PATCH：更新所有資料
 export async function PATCH(
   req: NextRequest,
-  context: RouteHandlerContext
+  { params }: { params: { id: string } }
 ) {
-  const id = Number(context.params.id);
+  const id = Number(params.id);
 
   if (!id || isNaN(id)) {
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
@@ -104,10 +103,8 @@ export async function PATCH(
     .map((q: any) => ({
       department_id: id,
       grade: q.grade,
-      quota: Number(q.quota),
+      quota: Number(q.quota), // ✅ 確保是數字
     }));
-
-  console.log('📦 插入 formatted quotas:', formattedQuotas);
 
   const { error: insertError } = await supabase
     .from('grade_quotas')
@@ -123,12 +120,12 @@ export async function PATCH(
 // DELETE：刪除整筆資料
 export async function DELETE(
   _: NextRequest,
-  context: RouteHandlerContext
+  { params }: { params: { id: string } }
 ) {
-  const id = Number(context.params.id);
+  const id = Number(params.id);
 
   if (!id || isNaN(id)) {
-    console.error('❌ DELETE：無效 ID', context.params.id);
+    console.error('❌ DELETE：無效 ID', params.id);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
@@ -154,6 +151,5 @@ export async function DELETE(
     return NextResponse.json({ message: firstError.message }, { status: 500 });
   }
 
-  console.log('✅ DELETE 成功');
   return NextResponse.json({ message: '刪除成功' });
 }
