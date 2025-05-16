@@ -51,109 +51,47 @@ export async function GET(_: NextRequest, context: any) {
 }
 
 // PATCH：更新所有資料
-export async function PATCH(req: NextRequest, context: any) {
-  const rawId = context.params?.id;
-  const id = Number(rawId);
+// 查詢 transfer_conditions 是否有資料
+const { data: existingCond, error: checkCondError } = await supabase
+  .from('transfer_conditions')
+  .select('condition_id')
+  .eq('department_id', id)
+  .maybeSingle();
 
-  if (!id || isNaN(id)) {
-    console.error('❌ PATCH：無效 ID', rawId);
-    return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
-  }
+if (checkCondError) {
+  console.error('❌ 讀取 transfer_conditions 錯誤:', checkCondError);
+  return NextResponse.json({ message: checkCondError.message }, { status: 500 });
+}
 
-  const body = await req.json();
-  console.log('🔄 PATCH 收到資料:', body);
-
-  const {
-    department_name,
-    category,
-    exam_subjects,
-    score_ratio,
-    remarks,
-    quotas,
-  } = body;
-
-  // 更新 departments
-  const { error: deptError } = await supabase
-    .from('departments')
-    .update({ department_name, category })
-    .eq('department_id', id);
-
-  if (deptError) {
-    console.error('❌ 更新 departments 失敗:', deptError);
-    return NextResponse.json({ message: deptError.message }, { status: 500 });
-  }
-
-  // 讀取 transfer_conditions 的主鍵
-  const { data: existingCond, error: checkCondError } = await supabase
+// ❗ 有資料就刪除（保險處理，防止 UNIQUE 錯誤）
+if (existingCond) {
+  console.log('🧹 刪除舊的 transfer_conditions, condition_id =', existingCond.condition_id);
+  const { error: delCondError } = await supabase
     .from('transfer_conditions')
-    .select('condition_id')
-    .eq('department_id', id)
-    .maybeSingle();
-
-  if (checkCondError) {
-    console.error('❌ 讀取 transfer_conditions 錯誤:', checkCondError);
-    return NextResponse.json({ message: checkCondError.message }, { status: 500 });
-  }
-
-  let condResult;
-  if (existingCond) {
-    console.log('📝 更新 transfer_conditions, condition_id =', existingCond.condition_id);
-    condResult = await supabase
-      .from('transfer_conditions')
-      .update({
-        exam_subjects,
-        score_ratio,
-        remarks,
-      })
-      .eq('condition_id', existingCond.condition_id);
-  } else {
-    console.log('➕ 新增 transfer_conditions');
-    condResult = await supabase
-      .from('transfer_conditions')
-      .insert({
-        department_id: id,
-        exam_subjects,
-        score_ratio,
-        remarks,
-      });
-  }
-
-  if (condResult.error) {
-    console.error('❌ 寫入 transfer_conditions 失敗:', condResult.error);
-    return NextResponse.json({ message: condResult.error.message }, { status: 500 });
-  }
-
-  // 刪除舊 quota
-  const { error: delError } = await supabase
-    .from('grade_quotas')
     .delete()
     .eq('department_id', id);
 
-  if (delError) {
-    console.error('❌ 刪除 grade_quotas 失敗:', delError);
-    return NextResponse.json({ message: delError.message }, { status: 500 });
+  if (delCondError) {
+    console.error('❌ 刪除 transfer_conditions 失敗:', delCondError);
+    return NextResponse.json({ message: delCondError.message }, { status: 500 });
   }
-
-  const formattedQuotas = (quotas || [])
-    .filter((q: any) => q.grade && q.quota)
-    .map((q: any) => ({
-      department_id: id,
-      grade: q.grade,
-      quota: q.quota,
-    }));
-
-  const { error: insertError } = await supabase
-    .from('grade_quotas')
-    .insert(formattedQuotas);
-
-  if (insertError) {
-    console.error('❌ 插入 grade_quotas 失敗:', insertError);
-    return NextResponse.json({ message: insertError.message }, { status: 500 });
-  }
-
-  console.log('✅ PATCH 更新成功');
-  return NextResponse.json({ message: '更新成功' });
 }
+
+// ✅ 插入新的 transfer_conditions（保證唯一）
+const { error: insertCondError } = await supabase
+  .from('transfer_conditions')
+  .insert({
+    department_id: id,
+    exam_subjects,
+    score_ratio,
+    remarks,
+  });
+
+if (insertCondError) {
+  console.error('❌ 插入 transfer_conditions 失敗:', insertCondError);
+  return NextResponse.json({ message: insertCondError.message }, { status: 500 });
+}
+
 
 
 // DELETE：刪除整筆資料
