@@ -78,7 +78,7 @@ export default function MBTIRecommendationsForm() {
 
       if (res.ok) {
         setSuccess(true);
-        router.push('/admin');
+        router.push(`/admin/departments/${department_id}/edit`);      
       } else {
         setError(data.message || '儲存失敗');
       }
