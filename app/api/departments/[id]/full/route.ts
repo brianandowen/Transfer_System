@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-// GET：取得完整資料
-export async function GET(_: NextRequest, context: { params: { id: string } }) {
-  const id = Number(context.params.id);
-
+// ✅ GET：取得完整資料
+export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+  const id = Number(params.id);
   if (!id || isNaN(id)) {
-    console.error('❌ GET：無效 ID', context.params.id);
+    console.error('❌ GET：無效 ID', params.id);
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
 
@@ -49,10 +48,9 @@ export async function GET(_: NextRequest, context: { params: { id: string } }) {
   });
 }
 
-// PATCH：更新所有資料
-export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
-  const id = Number(context.params.id);
-
+// ✅ PATCH：更新所有資料
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const id = Number(params.id);
   if (!id || isNaN(id)) {
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
@@ -134,10 +132,9 @@ export async function PATCH(req: NextRequest, context: { params: { id: string } 
   return NextResponse.json({ message: '更新成功' });
 }
 
-// DELETE：刪除整筆資料
-export async function DELETE(_: NextRequest, context: { params: { id: string } }) {
-  const id = Number(context.params.id);
-
+// ✅ DELETE：刪除整筆資料
+export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+  const id = Number(params.id);
   if (!id || isNaN(id)) {
     return NextResponse.json({ message: '系所 ID 無效' }, { status: 400 });
   }
@@ -158,7 +155,6 @@ export async function DELETE(_: NextRequest, context: { params: { id: string } }
     .eq('department_id', id);
 
   const firstError = condError || quotaError || deptError;
-
   if (firstError) {
     return NextResponse.json({ message: firstError.message }, { status: 500 });
   }
