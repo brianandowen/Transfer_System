@@ -72,16 +72,18 @@ export async function PATCH(req: NextRequest, context: any) {
     quotas,
   } = body;
 
+  // 更新 departments
   const { error: deptError } = await supabase
     .from('departments')
     .update({ department_name, category })
     .eq('department_id', id);
 
   if (deptError) {
-    console.error('❌ PATCH 更新 department 失敗:', deptError.message);
+    console.error('❌ 更新 departments 失敗:', deptError);
     return NextResponse.json({ message: deptError.message }, { status: 500 });
   }
 
+  // 讀取 transfer_conditions 的主鍵
   const { data: existingCond, error: checkCondError } = await supabase
     .from('transfer_conditions')
     .select('condition_id')
@@ -89,12 +91,13 @@ export async function PATCH(req: NextRequest, context: any) {
     .maybeSingle();
 
   if (checkCondError) {
-    console.error('❌ PATCH 檢查 condition 失敗:', checkCondError.message);
+    console.error('❌ 讀取 transfer_conditions 錯誤:', checkCondError);
     return NextResponse.json({ message: checkCondError.message }, { status: 500 });
   }
 
   let condResult;
   if (existingCond) {
+    console.log('📝 更新 transfer_conditions, condition_id =', existingCond.condition_id);
     condResult = await supabase
       .from('transfer_conditions')
       .update({
@@ -104,6 +107,7 @@ export async function PATCH(req: NextRequest, context: any) {
       })
       .eq('condition_id', existingCond.condition_id);
   } else {
+    console.log('➕ 新增 transfer_conditions');
     condResult = await supabase
       .from('transfer_conditions')
       .insert({
@@ -115,17 +119,18 @@ export async function PATCH(req: NextRequest, context: any) {
   }
 
   if (condResult.error) {
-    console.error('❌ PATCH 更新 transfer_conditions 失敗:', condResult.error.message);
+    console.error('❌ 寫入 transfer_conditions 失敗:', condResult.error);
     return NextResponse.json({ message: condResult.error.message }, { status: 500 });
   }
 
+  // 刪除舊 quota
   const { error: delError } = await supabase
     .from('grade_quotas')
     .delete()
     .eq('department_id', id);
 
   if (delError) {
-    console.error('❌ PATCH 刪除 quota 失敗:', delError.message);
+    console.error('❌ 刪除 grade_quotas 失敗:', delError);
     return NextResponse.json({ message: delError.message }, { status: 500 });
   }
 
@@ -142,13 +147,14 @@ export async function PATCH(req: NextRequest, context: any) {
     .insert(formattedQuotas);
 
   if (insertError) {
-    console.error('❌ PATCH 插入 quota 失敗:', insertError.message);
+    console.error('❌ 插入 grade_quotas 失敗:', insertError);
     return NextResponse.json({ message: insertError.message }, { status: 500 });
   }
 
   console.log('✅ PATCH 更新成功');
   return NextResponse.json({ message: '更新成功' });
 }
+
 
 // DELETE：刪除整筆資料
 export async function DELETE(_: NextRequest, context: any) {
