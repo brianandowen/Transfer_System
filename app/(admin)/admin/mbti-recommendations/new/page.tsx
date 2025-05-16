@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 const mbtiTypes = [
   'ISTJ', 'ISFJ', 'INFJ', 'INTJ',
@@ -43,7 +43,14 @@ export default function MBTIRecommendationsForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    console.log('🔍 導向目標 ID =', department_id);
+    setSuccess(false);
+
+    if (!department_id) {
+      console.error('❌ department_id is missing');
+      setError('無法取得系所 ID');
+      return;
+    }
+
     const filteredSuitable = suitableMBTIs.filter(Boolean);
     const filteredUnsuitable = unsuitableMBTIs.filter(Boolean);
 
@@ -67,6 +74,8 @@ export default function MBTIRecommendationsForm() {
       }))
     ];
 
+    console.log('📤 發送資料 payload:', payload);
+
     try {
       const res = await fetch('/api/mbti-recommendations', {
         method: 'POST',
@@ -75,15 +84,21 @@ export default function MBTIRecommendationsForm() {
       });
 
       const data = await res.json();
+      console.log('🧾 回傳結果:', data);
 
       if (res.ok) {
         setSuccess(true);
-        router.push(`/admin/departments/${department_id}/edit`);      
+        console.log(`✅ 成功，導向 /admin/departments/${department_id}/edit`);
+        setTimeout(() => {
+          router.push(`/admin/departments/${department_id}/edit`);
+        }, 1000);
       } else {
-        setError(data.message || '儲存失敗');
+        console.error('❌ 錯誤訊息:', data);
+        setError(data.message || '儲存失敗（未知錯誤）');
       }
-    } catch (err) {
-      setError('無法儲存資料，請稍後再試');
+    } catch (err: any) {
+      console.error('❌ 發生例外:', err);
+      setError(err?.message || '無法儲存資料，請稍後再試');
     }
   };
 
@@ -92,7 +107,7 @@ export default function MBTIRecommendationsForm() {
       <h1 className="text-2xl font-bold text-blue-300 mb-4">MBTI 推薦設定</h1>
       <p className="mb-4 text-gray-300">系所 ID: {department_id}</p>
       {error && <p className="text-red-400 mb-4">{error}</p>}
-      {success && <p className="text-green-400 mb-4">✅ 儲存成功</p>}
+      {success && <p className="text-green-400 mb-4">✅ 儲存成功，將跳轉至條件設定...</p>}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 適合區塊 */}
