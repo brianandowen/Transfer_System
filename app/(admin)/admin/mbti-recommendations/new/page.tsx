@@ -43,7 +43,7 @@ export default function MBTIRecommendationsForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
+    console.log('🔍 導向目標 ID =', department_id);
     const filteredSuitable = suitableMBTIs.filter(Boolean);
     const filteredUnsuitable = unsuitableMBTIs.filter(Boolean);
 
