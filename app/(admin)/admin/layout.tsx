@@ -11,7 +11,7 @@ export const metadata = {
 export default async function AdminSectionLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const token = cookieStore.get('admin-auth'); // ✅ 改為正確名稱
-
+  console.log('🧠 SSR Layout Loaded');
   if (!token || token.value !== '1') {         // ✅ 改為正確值
     redirect('/login');
   }
