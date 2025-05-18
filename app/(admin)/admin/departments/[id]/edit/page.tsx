@@ -110,7 +110,26 @@ export default function EditDepartmentPage() {
       <fieldset className="space-y-2 border border-gray-600 p-4 rounded">
         <legend className="font-semibold text-white">基本資料</legend>
         <input value={departmentName} onChange={e => setDepartmentName(e.target.value)} placeholder="系所名稱" className="w-full p-2 bg-gray-800 border border-gray-600 rounded" required />
-        <input value={category} onChange={e => setCategory(e.target.value)} placeholder="學群類別" className="w-full p-2 bg-gray-800 border border-gray-600 rounded" required />
+        <select
+  value={category}
+  onChange={e => setCategory(e.target.value)}
+  className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
+  required
+>
+  <option value="">請選擇學群類別</option>
+  <option value="文學與人文學群">文學與人文學群</option>
+  <option value="跨領域學群">跨領域學群</option>
+  <option value="藝術學群">藝術學群</option>
+  <option value="教育學群">教育學群</option>
+  <option value="醫藥衛生學群">醫藥衛生學群</option>
+  <option value="社會與心理學群">社會與心理學群</option>
+  <option value="外語學群">外語學群</option>
+  <option value="商業與管理學群">商業與管理學群</option>
+  <option value="生活科學學群">生活科學學群</option>
+  <option value="法律與政治學群">法律與政治學群</option>
+  <option value="資訊與工程學群">資訊與工程學群</option>
+  <option value="數理化學群">數理化學群</option>
+</select>
       </fieldset>
 
       {/* 轉系條件 */}
