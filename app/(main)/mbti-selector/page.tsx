@@ -1,21 +1,32 @@
-'use client';
+'use client'; // 宣告為 Client Component，才能使用 useState、useRouter 等 hook
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation'; // 用於在程式中導航跳轉
 
 export default function MBTIPage() {
-  const router = useRouter();
+  const router = useRouter(); // 初始化路由
+
+  // 使用者選擇的 MBTI 四個面向
   const [mbti, setMbti] = useState({ ei: '', sn: '', tf: '', jp: '' });
+
+  // 最終組合結果（例如 INTJ）
   const [result, setResult] = useState('');
+
+  // 推薦的系所
   const [best, setBest] = useState<any[]>([]);
+
+  // 不推薦的系所
   const [worst, setWorst] = useState<any[]>([]);
 
+  // 處理單一維度的選擇（例如 ei => E）
   const handleSelect = (dimension: string, value: string) => {
     setMbti(prev => ({ ...prev, [dimension]: value }));
   };
 
+  // 送出結果並呼叫 API，取得推薦科系資料
   const handleSubmit = async () => {
     const mbtiResult = mbti.ei + mbti.sn + mbti.tf + mbti.jp;
+
     if (mbtiResult.length !== 4) return alert('請完成所有選擇');
 
     setResult(mbtiResult);
@@ -23,6 +34,7 @@ export default function MBTIPage() {
     try {
       const res = await fetch(`/api/mbti?type=${mbtiResult}`);
       const data = await res.json();
+
       if (res.ok && !data.error) {
         setBest(data.best || []);
         setWorst(data.worst || []);
@@ -34,6 +46,7 @@ export default function MBTIPage() {
     }
   };
 
+  // 渲染單張系所卡片（點擊後導向該系所詳細頁）
   const renderDepartmentCard = (dep: any) => (
     <div
       key={dep.department_id}
@@ -49,10 +62,12 @@ export default function MBTIPage() {
   return (
     <main className="bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-white min-h-screen py-12 px-6">
       <div className="max-w-3xl mx-auto space-y-6">
+        {/* 頁面標題 */}
         <h1 className="text-4xl font-bold text-center text-blue-700 dark:text-blue-300 mb-6">MBTI 性格測驗</h1>
 
+        {/* 測驗選項卡片 */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow space-y-6">
-          {/* EI */}
+          {/* EI 維度 */}
           <div>
             <p className="font-semibold mb-2">你傾向於：</p>
             <div className="flex gap-4">
@@ -61,7 +76,7 @@ export default function MBTIPage() {
             </div>
           </div>
 
-          {/* SN */}
+          {/* SN 維度 */}
           <div>
             <p className="font-semibold mb-2">你處理資訊的方式：</p>
             <div className="flex gap-4">
@@ -70,7 +85,7 @@ export default function MBTIPage() {
             </div>
           </div>
 
-          {/* TF */}
+          {/* TF 維度 */}
           <div>
             <p className="font-semibold mb-2">你做決策的方式：</p>
             <div className="flex gap-4">
@@ -79,7 +94,7 @@ export default function MBTIPage() {
             </div>
           </div>
 
-          {/* JP */}
+          {/* JP 維度 */}
           <div>
             <p className="font-semibold mb-2">你對生活的態度：</p>
             <div className="flex gap-4">
@@ -88,6 +103,7 @@ export default function MBTIPage() {
             </div>
           </div>
 
+          {/* 送出按鈕 */}
           <div className="mt-6">
             <button onClick={handleSubmit} className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-semibold transition">
               查看推薦科系
@@ -95,6 +111,7 @@ export default function MBTIPage() {
           </div>
         </div>
 
+        {/* 結果區塊（若有結果才顯示） */}
         {result && (
           <div className="space-y-8">
             <p className="text-2xl text-center font-bold text-blue-600 dark:text-blue-300 mt-8">你的 MBTI 結果是：{result}</p>
@@ -119,25 +136,25 @@ export default function MBTIPage() {
           </div>
         )}
       </div>
-      {/* 外部測驗連結與免責聲明 */}
-<div className="max-w-3xl mx-auto mt-16 text-sm text-center text-gray-600 dark:text-gray-400 space-y-4">
-  <p>
-    不知道自己的 MBTI？你可以前往{" "}
-    <a
-      href="https://www.16personalities.com/tw/性格測試"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-blue-600 dark:text-blue-300 underline hover:text-blue-800 dark:hover:text-blue-100 transition"
-    >
-      16Personalities 免費性格測驗
-    </a>
-    了解自己的類型。
-  </p>
-  <p className="text-xs text-gray-500 dark:text-gray-500">
-    ※ 本系統僅為參考用途，推薦結果不代表官方或學校立場，請依自身興趣與專業選擇科系。
-  </p>
-</div>
 
+      {/* 底部附註與外部連結 */}
+      <div className="max-w-3xl mx-auto mt-16 text-sm text-center text-gray-600 dark:text-gray-400 space-y-4">
+        <p>
+          不知道自己的 MBTI？你可以前往{" "}
+          <a
+            href="https://www.16personalities.com/tw/性格測試"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 dark:text-blue-300 underline hover:text-blue-800 dark:hover:text-blue-100 transition"
+          >
+            16Personalities 免費性格測驗
+          </a>
+          了解自己的類型。
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-500">
+          ※ 本系統僅為參考用途，推薦結果不代表官方或學校立場，請依自身興趣與專業選擇科系。
+        </p>
+      </div>
     </main>
   );
 }
