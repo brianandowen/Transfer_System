@@ -1,13 +1,17 @@
-'use client';
+'use client'; // 宣告這是 Client Component，可使用 useState、useEffect 等 React Hook
 
 import React from 'react';
-
+// 預設匯出 DepartmentGuide 元件，供這個 page 路由使用
+// 其他模組引入時可以直接 import DepartmentGuide from '...'
+// 在 Next.js 中，每個 page.tsx 檔案必須有一個 default export 元件
 export default function DepartmentGuide() {
   return (
     <main className="bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-white min-h-screen py-12 px-6">
       <div className="max-w-4xl mx-auto">
+        {/* 頁面主標題 */}
         <h1 className="text-4xl font-bold text-center text-blue-700 dark:text-blue-300 mb-10">選擇適合你的科系</h1>
 
+        {/* 區塊一：如何選擇適合的科系 */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
           <h2 className="text-2xl text-blue-600 dark:text-blue-300 font-semibold mb-4">如何選擇適合的科系？</h2>
           <p>選擇科系是一個重要的決定，需要考慮多個面向：</p>
@@ -20,6 +24,7 @@ export default function DepartmentGuide() {
           </ul>
         </div>
 
+        {/* 區塊二：學院特色總覽 */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
           <h2 className="text-2xl text-blue-600 dark:text-blue-300 font-semibold mb-4">輔大各學院特色</h2>
           <p>輔仁大學擁有12個學院，每個學院都有其獨特的優勢和特色：</p>
@@ -39,6 +44,7 @@ export default function DepartmentGuide() {
           </ul>
         </div>
 
+        {/* 區塊三：更多資源 */}
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
           <h2 className="text-2xl text-blue-600 dark:text-blue-300 font-semibold mb-4">更多資源</h2>
           <p>以下是一些可以幫助你做決定的資源：</p>
@@ -48,6 +54,7 @@ export default function DepartmentGuide() {
             <li>職涯發展中心：提供職涯諮詢服務</li>
             <li>導師諮詢：尋求專業建議和指導</li>
           </ul>
+          {/* 官方學系資訊連結 */}
           <a
             href="https://www.fju.edu.tw/resource.jsp?labelID=33"
             className="block mt-6 text-blue-600 dark:text-blue-300 hover:underline font-medium"
